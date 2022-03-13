@@ -1,3 +1,7 @@
+### Intro
+
+This project reads a large json file of customers and start to stream it for upsert using the customer.io api.
+
 ### Features
 
 - Readable stream
