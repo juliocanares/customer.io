@@ -1,5 +1,5 @@
 {
-  "parallelism": 2,
+  "parallelism": 100,
   "userId": "id",
   "mappings": [
     {
@@ -10,9 +10,5 @@
       "from": "name",
       "to": "name"
     }
-  ],
-  "credentials": {
-    "siteId": "2350410ebcb33a1cbb54",
-    "apiKey": "b679b82e42a9293d2b63"
-  }
+  ]
 }

@@ -1,45 +1,32 @@
-import sys
+from dotenv import load_dotenv
 import grequests
 import json
-import requests
 from queue import Queue
 import json_stream
-from urllib3 import Retry
+from credentials import get_connections_credentials
+from request_session import get_request_session
+from arguments import read_arguments
+from map_attributes import map_attributes
 
-num_of_args = len(sys.argv)
+load_dotenv()
 
-config_filename = sys.argv[1] if num_of_args > 1 else 'configuration.json'
-data_filename = sys.argv[2] if num_of_args > 2 else 'data.json'
+config_filename, data_filename = read_arguments()
 
 config_file = json.loads(open(config_filename).read())
 
+siteId, apiKey = get_connections_credentials(config_file)
 
-def get_request_session():
-    session = requests.Session()
-
-    retries = Retry(total=3, status_forcelist=(500, 501, 502))
-
-    adapter = requests.adapters.HTTPAdapter(max_retries=retries)
-
-    session.mount('http://', adapter)
-
-    session.mount('https://', adapter)
-
-    return session
-
+queue = Queue(config_file['parallelism'])
 
 request_session = get_request_session()
 
+def create_async_request(customer):
+    endpoint = 'https://track.customer.io/api/v1/customers/{identifier}'
 
-endpoint = 'https://track.customer.io/api/v1/customers/{identifier}'
-
-
-def create_customer(customer):
     url = endpoint.format(identifier=customer['id'])
 
     params = {
-        "auth": (config_file['credentials']['siteId'],
-                 config_file['credentials']['apiKey']),
+        "auth": (siteId, apiKey),
         "json": customer,
         "session": request_session,
         "timeout": 3
@@ -47,26 +34,20 @@ def create_customer(customer):
 
     return grequests.put(url, **params)
 
+def create_customers(queue):
+    queue_size = queue.qsize()
 
-batch = Queue(config_file['parallelism'])
-
-
-def create_customers(batch):
-    batch_size = batch.qsize()
-
-    print('upserting {size} new customers'.format(size=batch_size))
+    print('upserting {size} new customers'.format(size=queue_size))
 
     customers_to_create = []
 
-    for _ in range(batch_size):
-        customer = dict(batch.get())
+    for _ in range(queue_size):
+        customer = dict(queue.get())
 
         for pair in config_file['mappings']:
-            if pair['from'] in customer:
-                customer[pair['to']] = customer[pair['from']]
-                customer.pop(pair['from'], None)
+            map_attributes(pair, customer)
 
-        customers_to_create.append(create_customer(customer))
+        customers_to_create.append(create_async_request(customer))
 
     grequests.map(customers_to_create)
 
@@ -76,9 +57,9 @@ def main():
         items = json_stream.load(file)
 
         for item in items.persistent():
-            batch.put(item)
-            if batch.full():
-                create_customers(batch)
+            queue.put(item)
+            if queue.full():
+                create_customers(queue)
 
 
 main()
