@@ -1,0 +1,18 @@
+{
+  "parallelism": 2,
+  "userId": "id",
+  "mappings": [
+    {
+      "from": "computed_ltv",
+      "to": "ltv"
+    },
+    {
+      "from": "name",
+      "to": "name"
+    }
+  ],
+  "credentials": {
+    "siteId": "2350410ebcb33a1cbb54",
+    "apiKey": "b679b82e42a9293d2b63"
+  }
+}
