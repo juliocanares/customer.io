@@ -34,4 +34,4 @@ CUSTOMER_IO_API_KEY=xyz
 
 configuration values are preferred.
 
-- Run the synchronizer: `python3 sync.py`
+- Run the synchronizer: `python3 sync.py configuration.json data.json`
